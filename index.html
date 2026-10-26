@@ -10,9 +10,12 @@ function importRows(rows){
  const gi=ix('guests','guest'),ri=ix('rating','score'),di=ix('date reviewed','date'),yi=ix('youtube','youtube url'),ti=ix('tiktok','tiktok url'),ii=ix('instagram','instagram url'),ni=ix('notes');
  const get=(row,i)=>i<0?'':String(row[i]??'').trim();
  return rows.slice(1).filter(r=>Array.isArray(r)&&get(r,fi)&&get(r,fi).toUpperCase()!=='NONE').map((r,i)=>{
- const raw=get(r,si),m=raw.match(/^(4\.\d+)\s*Reviewed/i);
- const status=m?'Reviewed':raw.replace(/^\d+\.\s*/,'').trim();
- return {id:i+1,flavor:get(r,fi),status,number:m?m[1]:get(r,ix('review number','review #')),rating:get(r,ri),date:get(r,di),guests:get(r,gi),youtube:get(r,yi),tiktok:get(r,ti),instagram:get(r,ii),notes:get(r,ni)};
+ const raw=get(r,si);
+ const m=raw.match(/\b(4\.\d+)\b/);
+ const cleaned=raw.replace(/\b4\.\d+\b/g,'').replace(/^[\s:–—-]+|[\s:–—-]+$/g,'').trim().toLowerCase();
+ const statusMap={'reviewed':'Reviewed','on hand':'On Hand','onhand':'On Hand','incoming':'Incoming','wish list':'Wish List','wishlist':'Wish List','old post':'Old Post','old posts':'Old Post'};
+ const status=statusMap[cleaned]||raw.trim();
+ return {id:i+1,flavor:get(r,fi),status,number:get(r,ix('review number','review #'))||(m?m[1]:''),rating:get(r,ri),date:get(r,di),guests:get(r,gi),youtube:get(r,yi),tiktok:get(r,ti),instagram:get(r,ii),notes:get(r,ni)};
  });
 }
 async function loadSheet(){
@@ -23,7 +26,9 @@ async function loadSheet(){
   const payload=await response.json();
   if(!payload.ok)throw Error('API returned an error');
   data=importRows(payload.data);
-  note.textContent='Live Google Sheets · Last refreshed '+new Intl.DateTimeFormat(undefined,{dateStyle:'medium',timeStyle:'short'}).format(new Date())+' · Edit data in Sheet1; refresh this page to see changes.';
+  const recognized=['Reviewed','On Hand','Incoming','Wish List','Old Post'];
+  const unknown=[...new Set(data.map(x=>x.status).filter(x=>x&&!recognized.includes(x)))];
+  note.textContent='Live Google Sheets · Last refreshed '+new Intl.DateTimeFormat(undefined,{dateStyle:'medium',timeStyle:'short'}).format(new Date())+' · '+data.length+' flavors loaded'+(unknown.length?' · Unrecognized status values: '+unknown.slice(0,8).join(', '):'')+'.';
   render();
  }catch(e){
   note.textContent='Could not load Google Sheets. Please refresh to try again. No sample data is displayed.';
