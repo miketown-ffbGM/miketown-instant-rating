@@ -5,18 +5,33 @@ function importRows(rows){
  if(!Array.isArray(rows)||rows.length<2||!Array.isArray(rows[0]))throw Error('Unexpected sheet format');
  const headers=rows[0].map(v=>String(v||'').trim().toLowerCase());
  const fi=headers.indexOf('flavor'),si=headers.indexOf('status');
- if(fi<0||si<0)throw Error('Missing Flavor or Status columns');
+ if(fi<0)throw Error('Missing Flavor column');
  const ix=(...names)=>names.map(n=>headers.indexOf(n)).find(i=>i>=0)??-1;
  const gi=ix('guests','guest'),ri=ix('rating','score'),di=ix('date reviewed','date'),yi=ix('youtube','youtube url'),ti=ix('tiktok','tiktok url'),ii=ix('instagram','instagram url'),ni=ix('notes');
  const get=(row,i)=>i<0?'':String(row[i]??'').trim();
- return rows.slice(1).filter(r=>Array.isArray(r)&&get(r,fi)&&get(r,fi).toUpperCase()!=='NONE').map((r,i)=>{
- const raw=get(r,si);
- const m=raw.match(/\b(4\.\d+)\b/);
- const cleaned=raw.replace(/\b4\.\d+\b/g,'').replace(/^[\s:–—-]+|[\s:–—-]+$/g,'').trim().toLowerCase();
- const statusMap={'reviewed':'Reviewed','on hand':'On Hand','onhand':'On Hand','incoming':'Incoming','wish list':'Wish List','wishlist':'Wish List','old post':'Old Post','old posts':'Old Post'};
- const status=statusMap[cleaned]||raw.trim();
- return {id:i+1,flavor:get(r,fi),status,number:get(r,ix('review number','review #'))||(m?m[1]:''),rating:get(r,ri),date:get(r,di),guests:get(r,gi),youtube:get(r,yi),tiktok:get(r,ti),instagram:get(r,ii),notes:get(r,ni)};
- });
+ const normalize=v=>{
+  const text=String(v??'').trim();
+  if(/^(?:4\\.\\d+)(?:\\b|$)/.test(text))return 'Reviewed';
+  if(/\\breviewed\\b/i.test(text))return 'Reviewed';
+  if(/\\bon\\s*hand\\b/i.test(text))return 'On Hand';
+  if(/\\bincoming\\b/i.test(text))return 'Incoming';
+  if(/\\bwish\\s*list\\b/i.test(text))return 'Wish List';
+  if(/\\bold\\s*posts?\\b/i.test(text))return 'Old Post';
+  return '';
+ };
+ let section='';
+ return rows.slice(1).map((r,i)=>{
+  if(!Array.isArray(r))return null;
+  const first=get(r,0);
+  const firstStatus=normalize(first);
+  if(firstStatus)section=firstStatus;
+  const flavor=get(r,fi);
+  if(!flavor||flavor.toUpperCase()==='NONE')return null;
+  const explicit=normalize(get(r,si));
+  const status=firstStatus||explicit||section;
+  const numberFromFirst=first.match(/4\\.\\d+/)?.[0]||'';
+  return {id:i+1,flavor,status,number:get(r,ix('review number','review #'))||numberFromFirst,rating:get(r,ri),date:get(r,di),guests:get(r,gi),youtube:get(r,yi),tiktok:get(r,ti),instagram:get(r,ii),notes:get(r,ni)};
+ }).filter(Boolean);
 }
 async function loadSheet(){
  try{
