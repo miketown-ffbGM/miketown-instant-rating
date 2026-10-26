@@ -28,7 +28,9 @@ async function loadSheet(){
   data=importRows(payload.data);
   const recognized=['Reviewed','On Hand','Incoming','Wish List','Old Post'];
   const unknown=[...new Set(data.map(x=>x.status).filter(x=>x&&!recognized.includes(x)))];
-  note.textContent='Live Google Sheets · Last refreshed '+new Intl.DateTimeFormat(undefined,{dateStyle:'medium',timeStyle:'short'}).format(new Date())+' · '+data.length+' flavors loaded'+(unknown.length?' · Unrecognized status values: '+unknown.slice(0,8).join(', '):'')+'.';
+  const blankStatuses=data.filter(x=>!x.status).length;
+  const statusCounts=Object.entries(data.reduce((a,x)=>(a[x.status||'(blank)']=(a[x.status||'(blank)']||0)+1,a),{})).map(([k,v])=>k+': '+v).join(' · ');
+  note.textContent='Live Google Sheets · Last refreshed '+new Intl.DateTimeFormat(undefined,{dateStyle:'medium',timeStyle:'short'}).format(new Date())+' · '+data.length+' flavors loaded · Status breakdown: '+statusCounts+(blankStatuses?' · Check Status column in Sheet1.':'')+(unknown.length?' · Unrecognized: '+unknown.slice(0,8).join(', '):'')+'.';
   render();
  }catch(e){
   note.textContent='Could not load Google Sheets. Please refresh to try again. No sample data is displayed.';
