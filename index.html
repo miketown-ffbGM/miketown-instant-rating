@@ -11,12 +11,12 @@ function importRows(rows){
  const get=(row,i)=>i<0?'':String(row[i]??'').trim();
  const normalize=v=>{
   const text=String(v??'').trim();
-  if(/^(?:4\\.\\d+)(?:\\b|$)/.test(text))return 'Reviewed';
-  if(/\\breviewed\\b/i.test(text))return 'Reviewed';
-  if(/\\bon\\s*hand\\b/i.test(text))return 'On Hand';
-  if(/\\bincoming\\b/i.test(text))return 'Incoming';
-  if(/\\bwish\\s*list\\b/i.test(text))return 'Wish List';
-  if(/\\bold\\s*posts?\\b/i.test(text))return 'Old Post';
+  if(/^4[.]\d+/.test(text))return 'Reviewed';
+  if(/reviewed/i.test(text))return 'Reviewed';
+  if(/on\s*hand/i.test(text))return 'On Hand';
+  if(/incoming/i.test(text))return 'Incoming';
+  if(/wish\s*list/i.test(text))return 'Wish List';
+  if(/old\s*posts?/i.test(text))return 'Old Post';
   return '';
  };
  let section='';
@@ -29,7 +29,7 @@ function importRows(rows){
   if(!flavor||flavor.toUpperCase()==='NONE')return null;
   const explicit=normalize(get(r,si));
   const status=firstStatus||explicit||section;
-  const numberFromFirst=first.match(/4\\.\\d+/)?.[0]||'';
+  const numberFromFirst=first.match(/4[.]\d+/)?.[0]||'';
   return {id:i+1,flavor,status,number:get(r,ix('review number','review #'))||numberFromFirst,rating:get(r,ri),date:get(r,di),guests:get(r,gi),youtube:get(r,yi),tiktok:get(r,ti),instagram:get(r,ii),notes:get(r,ni)};
  }).filter(Boolean);
 }
