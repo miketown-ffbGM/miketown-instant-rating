@@ -36,7 +36,7 @@ function importRows(rows){
 async function loadSheet(){
  try{
   const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),12000);
-  let response;try{response=await fetch(endpoint,{redirect:'follow',signal:controller.signal,cache:'no-store'})}finally{clearTimeout(timer)}
+  let response;try{response=await fetch(endpoint+(endpoint.includes('?')?'&':'?')+'_ts='+Date.now(),{redirect:'follow',signal:controller.signal,cache:'no-store'})}finally{clearTimeout(timer)}
   if(!response.ok)throw Error('HTTP '+response.status);
   const payload=await response.json();
   if(!payload.ok)throw Error('API returned an error');
@@ -52,4 +52,4 @@ async function loadSheet(){
   render();
  }
 }
-loadSheet();</script></body></html>
+loadSheet();document.addEventListener('visibilitychange',()=>{if(!document.hidden)loadSheet()});window.addEventListener('focus',()=>{if(!document.hidden)loadSheet()});</script></body></html>
